@@ -1,5 +1,5 @@
+#include <napi.h>
 #import <AppKit/AppKit.h>
-#include "mac_font_manager.h"
 
 /***** HELPERS *****/
 
@@ -116,3 +116,22 @@ void ShowFontPanel(const Napi::CallbackInfo &info) {
   else
     [font_manager orderFrontFontPanel:nil];
 }
+
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set(
+    Napi::String::New(env, "getAvailableFonts"), Napi::Function::New(env, GetAvailableFonts)
+  );
+  exports.Set(
+    Napi::String::New(env, "getAvailableFontFamilies"), Napi::Function::New(env, GetAvailableFontFamilies)
+  );
+  exports.Set(
+    Napi::String::New(env, "getAvailableMembersOfFontFamily"), Napi::Function::New(env, GetAvailableMembersOfFontFamily)
+  );
+  exports.Set(
+    Napi::String::New(env, "showFontPanel"), Napi::Function::New(env, ShowFontPanel)
+  );
+
+  return exports;
+}
+
+NODE_API_MODULE(font_manager, Init)

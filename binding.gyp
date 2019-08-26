@@ -5,8 +5,12 @@
     "conditions": [
       ['OS=="mac"', {
         "sources": [
-          "font_manager.cc",
           "src/mac_font_manager.mm"
+        ],
+      }],
+      ['OS=="linux"', {
+        "sources": [
+          "src/gtk_font_manager.mm"
         ],
       }]
     ],
