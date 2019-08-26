@@ -1,0 +1,33 @@
+{
+  "name": "electron-font-manager",
+  "version": "0.0.1",
+  "description": "Create native cross-platform font dialogs",
+  "main": "index.js",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codebytere/electron-font-manager.git"
+  },
+  "keywords": [
+    "font",
+    "dialog",
+    "electronjs",
+    "nodejs",
+    "npm"
+  ],
+  "author": "Shelley Vohr (@codebytere)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/codebytere/electron-font-manager/issues"
+  },
+  "homepage": "https://github.com/codebytere/electron-font-manager#readme",
+  "dependencies": {
+    "node-addon-api": "^1.7.1"
+  },
+  "devDependencies": {
+    "node-gyp": "^5.0.3"
+  }
+}
