@@ -37,8 +37,17 @@ function getAvailableMembersOfFontFamily(fontFamily) {
   return fontManager.getAvailableMembersOfFontFamily.call(this, fontFamily)
 }
 
+function showFontPanel(showStyles = false) {
+  if (typeof showStyles !== 'boolean') {
+    throw new TypeError('fontFamily must be a boolean')
+  }
+
+  fontManager.showFontPanel.call(this, showStyles)
+}
+
 module.exports = {
   getAvailableFonts,
   getAvailableMembersOfFontFamily,
-  getAvailableFontFamilies: fontManager.getAvailableFontFamilies
+  getAvailableFontFamilies: fontManager.getAvailableFontFamilies,
+  showFontPanel,
 }

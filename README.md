@@ -89,3 +89,14 @@ console.log(members)
 ]
 */
 ```
+
+### fontManager.showFontPanel(showStyles)
+
+* `showStyles` Boolean - whether to open the font styles panel or the regular font panel.
+
+```js
+const fontManager = require('electron-font-manager')
+
+// shows the font styles panel
+fontManager.showFontPanel(true)
+```

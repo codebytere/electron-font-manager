@@ -107,3 +107,12 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
   return members;
 }
 
+void ShowFontPanel(const Napi::CallbackInfo &info) {
+  bool show_styles = info[0].As<Napi::Boolean>().Value();
+  NSFontManager *font_manager = [NSFontManager sharedFontManager];
+
+  if (show_styles)
+    [font_manager orderFrontStylesPanel:nil];
+  else
+    [font_manager orderFrontFontPanel:nil];
+}
