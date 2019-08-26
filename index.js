@@ -29,7 +29,16 @@ function getAvailableFonts(params = {}) {
   return fontManager.getAvailableFonts.call(this, params)
 }
 
+function getAvailableMembersOfFontFamily(fontFamily) {
+  if (typeof fontFamily !== 'string') {
+    throw new TypeError('fontFamily must be a string')
+  }
+
+  return fontManager.getAvailableMembersOfFontFamily.call(this, fontFamily)
+}
+
 module.exports = {
   getAvailableFonts,
+  getAvailableMembersOfFontFamily,
   getAvailableFontFamilies: fontManager.getAvailableFontFamilies
 }

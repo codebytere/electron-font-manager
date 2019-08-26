@@ -10,7 +10,7 @@ This native Node.js module allows you to manipulate fonts on macoS.
 
 ## API
 
-### fontManager.getAvailableFonts([params]) _macOS_
+### fontManager.getAvailableFonts([params])
 
 * `params` Object (optional)
   * `traits` Array<String> - An array of strings specifying what traits to filter the available system fonts for; must be one of: 'bold', 'compressed', 'condensed', 'expanded', 'fixedPitch', 'italic', 'narrow', 'nonStandardCharacterSet', 'poster', 'smallCaps', 'unbold', 'unitalic'.
@@ -20,7 +20,7 @@ Returns the names of the fonts available in the system.
 These pairs of traits are mutually exclusive:
 * 'condensed' and 'expanded'
 * 'bold' and 'unbold'
-* 'italic' and 'NSUnitalicFontMask'
+* 'italic' and 'unitalic'
 
 ```js
 const { getAvailableFonts } = require('electron-font-manager')
@@ -39,9 +39,9 @@ console.log(availableFonts)
 */
 ```
 
-### fontManager.getAvailableFontFamilies() _macOS_
+### fontManager.getAvailableFontFamilies()
 
-Returns the names of the font families available in the system.
+Returns Array<String> - the names of the font families available in the system.
 
 ```js
 const { getAvailableFontFamilies } = require('electron-font-manager')
@@ -58,6 +58,34 @@ console.log(availableFontFamilies)
   'Andale Mono',
   'Arial',
   ... 241 more items
+]
+*/
+```
+
+### fontManager.getAvailableMembersOfFontFamily(fontFamily)
+
+* `family` String - The name of a font family, like one returned in `availableFontFamilies()`.
+
+Returns Array<Array> - an array with one array entry for each available member of a font family.
+
+Each entry of the returned array is another array with three members, as follows:
+
+1. The font name, as a string.
+2. The part of the font name used in the font panel that’s not the font name, as a string. This value is not localized—for example, 'Roman', 'Italic', or 'Bold'.
+2. The font’s weight, as a number.
+
+```js
+const fontManager = require('electron-font-manager')
+
+const members = fontManager.getAvailableMembersOfFontFamily('Times')
+
+console.log(members)
+/* prints:
+[
+ ['Times-Roman', 'Roman', 5],
+ ['Times-Italic', 'Italic', 6],
+ ['Times-Bold', 'Bold', 9],
+ ['Times-BoldItalic', 'Bold Italic', 9]
 ]
 */
 ```

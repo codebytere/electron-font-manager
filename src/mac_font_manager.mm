@@ -80,3 +80,30 @@ Napi::Array GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
   return font_families;
 }
 
+Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  std::string family_utf8 = info[0].As<Napi::String>().Utf8Value();
+  NSString* family = [NSString stringWithUTF8String:family_utf8.c_str()];
+
+  NSArray *family_members = [[NSFontManager sharedFontManager] availableMembersOfFontFamily:family];
+
+  int num_members = [family_members count];
+  Napi::Array members = Napi::Array::New(env, num_members);
+
+  for (int i = 0; i < num_members; i++) {
+    NSArray *family_member = [family_members objectAtIndex:i];
+
+    Napi::Array member = Napi::Array::New(env, 3);
+    for (int j = 0; j < 3; j++) {
+      if (j == 2)
+        member[j] = [[family_member objectAtIndex:j] intValue]; // font weight
+      else 
+        member[j] = std::string([[family_member objectAtIndex:j] UTF8String]);
+    }
+    members[i] = member;
+  }
+
+  return members;
+}
+
