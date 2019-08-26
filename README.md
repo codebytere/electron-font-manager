@@ -6,7 +6,9 @@
 $ npm i electron-font-manager
 ```
 
-This native Node.js module allows you to manipulate fonts on macoS.
+This native Node.js module allows you to manipulate fonts on macOS.
+
+*Here there be (some) dragons - this is a work in progress. Please try out with caution.*
 
 ## API
 
