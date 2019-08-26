@@ -22,7 +22,7 @@ function getAvailableFonts(params = {}) {
     if (!Array.isArray(params.traits)) {
       throw new TypeError('traits must be an array')
     } else if (!params.traits.every(t => options.includes(t))) {
-      throw new TypeError(`Invalid trait type: ${t}`)
+      throw new TypeError('Invalid trait type')
     }
   }
 
@@ -39,7 +39,7 @@ function getAvailableMembersOfFontFamily(fontFamily) {
 
 function showFontPanel(showStyles = false) {
   if (typeof showStyles !== 'boolean') {
-    throw new TypeError('fontFamily must be a boolean')
+    throw new TypeError('showStyles must be a boolean')
   }
 
   fontManager.showFontPanel.call(this, showStyles)
