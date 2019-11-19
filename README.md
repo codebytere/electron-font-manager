@@ -6,13 +6,13 @@
 $ npm i electron-font-manager
 ```
 
-This native Node.js module allows you to manipulate fonts on macOS.
+This native Node.js module allows you to manipulate fonts on different OSes.
 
 *Here there be (some) dragons - this is a work in progress. Please try out with caution.*
 
 ## API
 
-### fontManager.getAvailableFonts([params])
+### fontManager.getAvailableFonts([params]) **_macOS_**
 
 * `params` Object (optional)
   * `traits` Array<String> - An array of strings specifying what traits to filter the available system fonts for; must be one of: 'bold', 'compressed', 'condensed', 'expanded', 'fixedPitch', 'italic', 'narrow', 'nonStandardCharacterSet', 'poster', 'smallCaps', 'unbold', 'unitalic'.
@@ -41,7 +41,7 @@ console.log(availableFonts)
 */
 ```
 
-### fontManager.getAvailableFontFamilies()
+### fontManager.getAvailableFontFamilies() **_Windows_ _macOS_**
 
 Returns Array<String> - the names of the font families available in the system.
 
@@ -64,7 +64,7 @@ console.log(availableFontFamilies)
 */
 ```
 
-### fontManager.getAvailableMembersOfFontFamily(fontFamily)
+### fontManager.getAvailableMembersOfFontFamily(fontFamily) **_macOS_**
 
 * `family` String - The name of a font family, like one returned in `availableFontFamilies()`.
 
@@ -92,9 +92,9 @@ console.log(members)
 */
 ```
 
-### fontManager.showFontPanel(showStyles)
+### fontManager.showFontPanel(showStyles) **_Linux_ _macOS_**
 
-* `showStyles` Boolean - whether to open the font styles panel or the regular font panel.
+* `showStyles` Boolean (**_macOS_**) - whether to open the font styles panel or the regular font panel.
 
 ```js
 const fontManager = require('electron-font-manager')
