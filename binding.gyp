@@ -10,7 +10,12 @@
       }],
       ['OS=="linux"', {
         "sources": [
-          "src/gtk_font_manager.mm"
+          "src/gtk_font_manager.cc"
+        ],
+      }],
+      ['OS=="win"', {
+        "sources": [
+          "src/win_font_manager.cc"
         ],
       }]
     ],
