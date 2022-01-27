@@ -12,7 +12,7 @@ This native Node.js module allows you to manipulate fonts on different OSes.
 
 ## API
 
-### fontManager.getAvailableFonts([params]) **_macOS_**
+### fontManager.getAvailableFonts([params]) **_Windows_ _macOS_**
 
 * `params` Object (optional)
   * `traits` Array<String> - An array of strings specifying what traits to filter the available system fonts for; must be one of: 'bold', 'compressed', 'condensed', 'expanded', 'fixedPitch', 'italic', 'narrow', 'nonStandardCharacterSet', 'poster', 'smallCaps', 'unbold', 'unitalic'.
@@ -64,7 +64,7 @@ console.log(availableFontFamilies)
 */
 ```
 
-### fontManager.getAvailableMembersOfFontFamily(fontFamily) **_macOS_**
+### fontManager.getAvailableMembersOfFontFamily(fontFamily) **_Windows_ _macOS_**
 
 * `family` String - The name of a font family, like one returned in `availableFontFamilies()`.
 

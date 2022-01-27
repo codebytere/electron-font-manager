@@ -1,103 +1,176 @@
 #include <napi.h>
 
+#include <set>
+#include <string>
+#include <vector>
+
+#include <windows.h>
+#include <strsafe.h>
+
 /***** EXPORTED FUNCTIONS *****/
 
-int CALLBACK EnumFontFamExProc(
-   const LOGFONT    *lpelfe,
-   const TEXTMETRIC *lpntme,
+typedef std::basic_string<WCHAR> FontString;
+
+struct FindFontResults {
+  std::vector<ENUMLOGFONTEXW> fonts;
+  std::set<FontString> found;
+};
+
+int CALLBACK FindOneFont(
+   const LOGFONTW   *lpelfe,
+   const TEXTMETRICW*lpntme,
          DWORD      FontType,
          LPARAM     lParam
 )
 {
-  const ENUMLOGFONTEX* logFont = (ENUMLOGFONTEX*)lpelfe;
-  std::vector<ENUMLOGFONTEX>* results = (std::vector<ENUMLOGFONTEX>*)lParam;
-  if (FontType == TRUETYPE_FONTTYPE)
+  (void)FontType;
+  const ENUMLOGFONTEXW* logFont = (ENUMLOGFONTEXW*)lpelfe;
+  FindFontResults* results = (FindFontResults*)lParam;
+  FontString key(logFont->elfFullName);
+  if (results->found.find(key) == results->found.end())
   {
-    results->append(lParam);
-    logFont->elfFullName;
-    logFont->elfStyle;
+    results->fonts.push_back(*logFont);
+    results->found.insert(key);
   }
+  return 1;
+}
+
+int CALLBACK FindOneFontFamily(
+   const LOGFONTW   *lpelfe,
+   const TEXTMETRICW*lpntme,
+         DWORD      FontType,
+         LPARAM     lParam
+)
+{
+  (void)FontType;
+  const ENUMLOGFONTEXW* logFont = (ENUMLOGFONTEXW*)lpelfe;
+  FindFontResults* results = (FindFontResults*)lParam;
+  FontString key(logFont->elfLogFont.lfFaceName);
+  if (results->found.find(key) == results->found.end())
+  {
+    results->fonts.push_back(*logFont);
+    results->found.insert(key);
+  }
+  return 1;
 }
 
 Napi::Array GetAvailableFonts(const Napi::CallbackInfo &info) {
-  LOGFONT logFont;
-  std::vector<ENUMLOGFONTEX> results;
+  Napi::Env env = info.Env();
+
+  LOGFONTW logFont;
+  FindFontResults results;
 
   // To enumerate all styles and charsets of all fonts:
-  lf.lfFaceName[0] = '\0';
-  lf.lfCharSet = DEFAULT_CHARSET;
+  memset(&logFont, 0, sizeof(logFont));
+  logFont.lfFaceName[0] = '\0';
+  logFont.lfCharSet = ANSI_CHARSET;//DEFAULT_CHARSET;
+  HDC hdc = GetDC(GetTopWindow(NULL));
   int result = EnumFontFamiliesExW(
                         hdc,
                         &logFont,
-                        EnumFontFamExProc,
+                        FindOneFont,
                         (LPARAM)&results,
                         0);
-  Napi::Array font_families = Napi::Array::New(env, results.size());
-  for (std::vector<ENUMLOGFONTEX>::iterator i = results.begin();
-       i != results.end();
-       ++) {
-    font_families[i] = results[i]->elfFullName;
-    font_families[i] = results[i]->elfStyle;
+  Napi::Array fonts = Napi::Array::New(env, results.fonts.size());
+  size_t index = 0;
+  for (std::vector<ENUMLOGFONTEXW>::iterator i = results.fonts.begin();
+       i != results.fonts.end();
+       ++i) {
+    fonts[index++] = (const char16_t*)i->elfFullName;
   }
+
+  return fonts;
 }
 
 Napi::Array GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  Napi::Array font_families = Napi::Array::New(env, num_font_families);
 
-  InstalledFontCollection installedFontCollection;
-  INT num_font_families = installedFontCollection.GetFamilyCount();
-  INT num_families_found = 0;
-  WCHAR family_name[LF_FACESIZE];
-  FontFamily* arr_font_families = new FontFamily[num_font_families];
+  LOGFONTW logFont;
+  FindFontResults results;
 
-  installedFontCollection.GetFamilies(num_font_families, arr_font_families, &num_families_found);
-
-  for(INT idx = 0; idx < num_font_families; ++idx) {
-    arr_font_families[idx].GetFamilyName(family_name);
-    std::string converted_string(family_name.begin(), family_name.end());
-    font_families[idx] = converted_string;
+  // To enumerate all styles and charsets of all fonts:
+  memset(&logFont, 0, sizeof(logFont));
+  logFont.lfFaceName[0] = '\0';
+  logFont.lfCharSet = DEFAULT_CHARSET;
+  HDC hdc = GetDC(GetTopWindow(NULL));
+  int result = EnumFontFamiliesExW(
+                        hdc,
+                        &logFont,
+                        FindOneFontFamily,
+                        (LPARAM)&results,
+                        0);
+  Napi::Array font_families = Napi::Array::New(env, results.fonts.size());
+  size_t index = 0;
+  for (std::vector<ENUMLOGFONTEXW>::iterator i = results.fonts.begin();
+       i != results.fonts.end();
+       ++i) {
+    font_families[index++] = (const char16_t*)i->elfLogFont.lfFaceName;
   }
-
-  delete [] arr_font_families;
 
   return font_families;
 }
 
 Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
-  // To enumerate all styles and character sets of the Arial font:
-  hr = StringCchCopy((LPSTR)lf.lfFaceName, LF_FACESIZE, "Arial");
+  Napi::Env env = info.Env();
+
+  std::u16string family = info[0].As<Napi::String>().Utf16Value();
+
+  LOGFONTW logFont;
+  FindFontResults results;
+  HRESULT hr;
+
+  // To enumerate all styles and charsets of all fonts:
+  memset(&logFont, 0, sizeof(logFont));
+  hr = StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, (LPCWSTR)family.c_str());
   if (FAILED(hr))
   {
-    // TODO: write error handler
+    return Napi::Array::New(env, 0);
   }
-  lf.lfCharSet = DEFAULT_CHARSET;
+  logFont.lfCharSet = DEFAULT_CHARSET;
+  HDC hdc = GetDC(GetTopWindow(NULL));
+  int result = EnumFontFamiliesExW(
+                        hdc,
+                        &logFont,
+                        FindOneFont,
+                        (LPARAM)&results,
+                        0);
+  Napi::Array font_families = Napi::Array::New(env, results.fonts.size() * 3);
+  size_t index = 0;
+  for (std::vector<ENUMLOGFONTEXW>::iterator i = results.fonts.begin();
+       i != results.fonts.end();
+       ++i) {
+    font_families[index++] = (const char16_t*)i->elfFullName;
+    font_families[index++] = (const char16_t*)i->elfStyle;
+    font_families[index++] = i->elfLogFont.lfWeight;
+  }
+
+  return font_families;
 }
 
-void ShowFontPanel(const Napi::CallbackInfo &info) {
-  bool show_styles = info[0].As<Napi::Boolean>().Value();
-  // It should be OK to always use GDI simulations
-  DWORD flags = CF_SCREENFONTS /* | CF_NOSIMULATIONS */ ;
+Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
 
-  LOGFONT logFont;
+  std::u16string title = info[1].As<Napi::String>().Utf16Value();
+  DWORD flags = CF_SCREENFONTS | CF_SCALABLEONLY;
 
-  CHOOSEFONT chooseFontStruct;
-  chooseFontStruct.lStructSize = sizeof(CHOOSEFONT);
+  LOGFONTW logFont;
+
+  CHOOSEFONTW chooseFontStruct;
+  chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
   chooseFontStruct.hwndOwner = GetTopWindow(NULL);
   chooseFontStruct.lpLogFont = &logFont;
-
-  if ( m_fontData.GetRestrictSelection() & wxFONTRESTRICT_SCALABLE )
-    flags |= CF_SCALABLEONLY;
   chooseFontStruct.Flags = flags;
-  if ( ChooseFont(&chooseFontStruct) != 0 )
-  {
-    wxRGBToColour(m_fontData.m_fontColour, chooseFontStruct.rgbColors);
-    m_fontData.m_chosenFont = wxFont(wxNativeFontInfo(logFont, this));
-    m_fontData.EncodingInfo().facename = logFont.lfFaceName;
-    m_fontData.EncodingInfo().charset = logFont.lfCharSet;
 
-    return wxID_OK;
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+  if (ChooseFontW(&chooseFontStruct) != 0)
+  {
+    deferred.Resolve(Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
   }
+  else
+  {
+    deferred.Reject(Napi::String::New(env, "user cancel"));
+  }
+  return deferred.Promise();
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
