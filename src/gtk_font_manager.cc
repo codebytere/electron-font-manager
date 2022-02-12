@@ -1,7 +1,7 @@
 #include <napi.h>
 // #include <gtk/gtk.h>
 
-void ShowFontPanel(const Napi::CallbackInfo &info) {
+Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   Napi::Function emit = info[0].As<Napi::Function>();
   Napi::Object options = info[1].As<Napi::Object>();
