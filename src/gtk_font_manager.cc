@@ -1,12 +1,13 @@
 #include <napi.h>
-#include <gtk/gtk.h>
+// #include <gtk/gtk.h>
 
 void ShowFontPanel(const Napi::CallbackInfo &info) {
-  std::string title = info[0].As<Napi::String>().Utf8Value();
+  // std::string title = info[0].As<Napi::String>().Utf8Value();
 
-  GtkFontChooser *fd = (GtkFontChooser*)gtk_font_chooser_dialog_new (title.c_str(), NULL);
+  // GtkFontChooser *fd = (GtkFontChooser*)gtk_font_chooser_dialog_new (title.c_str(), NULL);
 
-  gtk_widget_show(GTK_WIDGET(fd));
+  // gtk_widget_show(GTK_WIDGET(fd));
+  return deferred.Promise();
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

@@ -149,22 +149,53 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
 
 Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
+  Napi::Function emit = info[0].As<Napi::Function>();
+  Napi::Object options = info[1].As<Napi::Object>();
 
-  std::u16string title = info[1].As<Napi::String>().Utf16Value();
+  std::u16string title;
+  Napi::Value titleValue = options.Get("title");
+  if (titleValue.IsString())
+      title = titleValue.As<Napi::String>().Utf16Value();
   DWORD flags = CF_SCREENFONTS | CF_SCALABLEONLY;
 
   LOGFONTW logFont;
+  memset(&logFont, 0, sizeof(logFont));
+  // if () {
+  //     StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, );
+  // }
 
   CHOOSEFONTW chooseFontStruct;
+  memset(&chooseFontStruct, sizeof(chooseFontStruct));
   chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
   chooseFontStruct.hwndOwner = GetTopWindow(NULL);
   chooseFontStruct.lpLogFont = &logFont;
+  // if () {
+  //     chooseFontStruct.iPointSize = (INT)0;
+  // }
+  // if () {
+  //     chooseFontStruct.lpszStyle = ;
+  //     flags |= CF_USESTYLE;
+  // }
   chooseFontStruct.Flags = flags;
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
   if (ChooseFontW(&chooseFontStruct) != 0)
   {
-    deferred.Resolve(Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
+      Napi::Object obj = Napi::Object::New(env);
+      obj.Set("family", Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
+      obj.Set("style", Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
+      obj.Set("pointSize", Napi::Number::New(env, chooseFontStruct.iPointSize));
+      std::vector<std::string> traits;
+      if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
+          traits.push_back("bold");
+      if ((chooseFontStruct.nFontType & ITALICS_FONTTYPE) != 0)
+          traits.push_back("italic");
+      Napi::Array t = Napi::Array::New(env, traits.size());
+      for (size_t i = 0; i < traits.size(); i++)
+          t[i] = traits[i];
+      obj.Set(Napi::String::New(env, "traits"), BuildTraits(env, mask));
+      emit.Call({Napi::String::New(env, "fontSelected"), obj});
+      deferred.Resolve(obj);
   }
   else
   {
