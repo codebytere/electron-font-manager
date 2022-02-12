@@ -165,7 +165,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   // }
 
   CHOOSEFONTW chooseFontStruct;
-  memset(&chooseFontStruct, sizeof(chooseFontStruct));
+  memset(&chooseFontStruct, 0, sizeof(chooseFontStruct));
   chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
   chooseFontStruct.hwndOwner = GetTopWindow(NULL);
   chooseFontStruct.lpLogFont = &logFont;
@@ -188,12 +188,12 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
       std::vector<std::string> traits;
       if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
           traits.push_back("bold");
-      if ((chooseFontStruct.nFontType & ITALICS_FONTTYPE) != 0)
+      if ((chooseFontStruct.nFontType & ITALIC_FONTTYPE) != 0)
           traits.push_back("italic");
       Napi::Array t = Napi::Array::New(env, traits.size());
       for (size_t i = 0; i < traits.size(); i++)
           t[i] = traits[i];
-      obj.Set(Napi::String::New(env, "traits"), BuildTraits(env, mask));
+      obj.Set(Napi::String::New(env, "traits"), t);
       emit.Call({Napi::String::New(env, "fontSelected"), obj});
       deferred.Resolve(obj);
   }
