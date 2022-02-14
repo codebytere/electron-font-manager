@@ -183,7 +183,8 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   {
       Napi::Object obj = Napi::Object::New(env);
       obj.Set("family", Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
-      obj.Set("style", Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
+      if (chooseFontStruct.lpszStyle)
+          obj.Set("style", Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
       obj.Set("pointSize", Napi::Number::New(env, chooseFontStruct.iPointSize));
       std::vector<std::string> traits;
       if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
