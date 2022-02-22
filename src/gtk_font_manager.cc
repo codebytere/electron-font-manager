@@ -8,7 +8,6 @@
 
 FontConfigWrapper::FontConfigWrapper()
 {
-  std::cout << "create" << std::endl;
   FcInit();
   m_config = FcInitLoadConfigAndFonts();
   m_pattern = FcPatternCreate();
@@ -124,6 +123,24 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
   }
   return fontNames;
   // TODO cleanning ressources
+}
+
+Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
+  std::string family = info[0].As<Napi::String>().Utf8Value();
+
+  m_set = FcObjectSetBuild(FC_FAMILY, FC_WEIGHT, FC_FULLNAME, (char *) 0);
+  m_fontSet = FcFontList(m_config, m_pattern, m_set);
+
+  std::vector<std::tuple<std::string, std::string, int>> resData;
+  for (int i = 0; m_fontSet && i < m_fontSet->nfont; i++) {
+    FcPattern *currentPattern = m_fontSet->fonts[i];
+    FcChar8 *currentFamily;
+    if (FcPatternGetString(currentPattern, FC_FULLNAME, 0, &currentFamily) == FcResultMatch) {
+      if (std::string(reinterpret_cast<const char*>(currentFamily)) == family) {
+        
+      }
+    }
+  }
 }
 
 

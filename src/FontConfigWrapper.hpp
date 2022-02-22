@@ -67,7 +67,6 @@ class FontConfigWrapper
             {"italic", TraitComparator([](FcPattern * pat) {
                 FcChar8* name;
                 if (FcPatternGetString(pat, FC_STYLE, 0, &name) == FcResultMatch) {
-                    std::cout << std::string(reinterpret_cast<const char*>(name)) << std::endl;
                     return std::string(reinterpret_cast<const char*>(name)).find("Italic") != std::string::npos;
                 } else {
                     return false;
