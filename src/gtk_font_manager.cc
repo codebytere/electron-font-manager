@@ -15,13 +15,10 @@ FontConfigWrapper::FontConfigWrapper()
 
 FontConfigWrapper::~FontConfigWrapper() // TODO handle correctly destruction
 {
-  // FcFontSetDestroy(m_fontSet);
-  // FcObjectSetDestroy(m_set);
   // FcPatternDestroy(m_pattern);
   // FcConfigDestroy(m_config);
   // FcFini();
 }
-
 
 void ShowFontPanel(const Napi::CallbackInfo &info) {
   std::string title = info[0].As<Napi::String>().Utf8Value();
@@ -29,50 +26,6 @@ void ShowFontPanel(const Napi::CallbackInfo &info) {
   GtkFontChooser *fd = (GtkFontChooser*)gtk_font_chooser_dialog_new (title.c_str(), NULL);
 
   gtk_widget_show(GTK_WIDGET(fd));
-}
-
-// trying with gtk
-// Napi::Array GetAvailableFonts(const Napi::CallbackInfo &info) {
-//   // TODO Parameters gestion
-  
-//   PangoContext *context = pango_context_new();
-//   PangoFontMap 
-//   // retrieve fonts
-  
-//   PangoFontFamily **fontFamilies;
-//   int size = 0;
-//   context->pango_context_list_families(&fontFamilies, &size);
-//   std::cout << size << std::endl;
-//   for (int i = 0; i < size; i++) {
-//     std::cout << pango_font_family_get_name(fontFamilies[i]) << std::endl;
-//   }
-//   return {};
-// }
-
-// with fontconfig
-Napi::Array FontConfigWrapper::GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
-  Napi::Env env = info.Env();
-
-  m_set = FcObjectSetBuild(FC_FAMILY, FC_STYLE, FC_LANG, FC_FILE, (char *) 0);
-  m_fontSet = FcFontList(m_config, m_pattern, m_set);
-
-  std::vector<std::string>vecFontFamilies;
-  for (int i = 0; m_fontSet && i < m_fontSet->nfont; i++) {
-    FcPattern *currentPattern = m_fontSet->fonts[i];
-    FcChar8 *family;
-    if (FcPatternGetString(currentPattern, FC_FAMILY, 0, &family) == FcResultMatch) {
-      std::string familyStr = reinterpret_cast<const char*>(family); // not sure cast is the best idea, return uchar string ?
-      if (std::find(vecFontFamilies.begin(), vecFontFamilies.end(), familyStr) == vecFontFamilies.end())
-        vecFontFamilies.push_back(familyStr);
-    }
-  }
-  // fill result
-  Napi::Array fontFamilies = Napi::Array::New(env, vecFontFamilies.size());
-  for (int i = 0; i < vecFontFamilies.size(); i++) {
-    fontFamilies[i] = vecFontFamilies[i];
-  }
-  return fontFamilies;
-  // TODO cleanning ressources
 }
 
 std::vector<TraitComparator> FontConfigWrapper::parseTraits(const Napi::Array &traits) {
@@ -96,20 +49,21 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
     traitsFilters = parseTraits(traits);
   }
 
-  m_set = FcObjectSetBuild(FC_FAMILY, FC_STYLE, FC_FILE, FC_WIDTH, FC_FULLNAME, (char *) 0);
-  m_fontSet = FcFontList(m_config, m_pattern, m_set);
+  FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, FC_FULLNAME, FC_STYLE, FC_WIDTH, (char *) 0);
+  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
 
   std::vector<std::string> vecFontNames;
-  for (int i = 0; m_fontSet && i < m_fontSet->nfont; i++) {
-    FcPattern *currentPattern = m_fontSet->fonts[i];
+  for (int i = 0; fontSet && i < fontSet->nfont; i++) {
+    FcPattern *currentPattern = fontSet->fonts[i];
     FcChar8 *name;
 
     bool passAllFilters = true;
     //handle traits
-    if (traitsFilters.size() > 0)
+    if (traitsFilters.size() > 0) {
       for (const auto &filter : traitsFilters) {
         passAllFilters = passAllFilters && filter(currentPattern);
       }
+    }
     // sometime, fonts do not have a full name. What to do in this case ?
     if (passAllFilters && FcPatternGetString(currentPattern, FC_FULLNAME, 0, &name) == FcResultMatch) {
       vecFontNames.push_back(std::string(reinterpret_cast<const char*>(name)));
@@ -118,23 +72,73 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
 
   // fill result
   Napi::Array fontNames = Napi::Array::New(env, vecFontNames.size());
-  for (int i = 0; i < vecFontNames.size(); i++) {
+  for (unsigned int i = 0; i < vecFontNames.size(); i++) {
     fontNames[i] = vecFontNames[i];
   }
+
+  // cleanning ressources
+  FcFontSetDestroy(fontSet);
+  FcObjectSetDestroy(set);
   return fontNames;
-  // TODO cleanning ressources
+}
+
+
+// trying with gtk without sucess
+// Napi::Array GetAvailableFonts(const Napi::CallbackInfo &info) {
+//   // TODO Parameters gestion
+  
+//   PangoContext *context = pango_context_new();
+//   PangoFontMap 
+//   // retrieve fonts
+  
+//   PangoFontFamily **fontFamilies;
+//   int size = 0;
+//   context->pango_context_list_families(&fontFamilies, &size);
+//   std::cout << size << std::endl;
+//   for (int i = 0; i < size; i++) {
+//     std::cout << pango_font_family_get_name(fontFamilies[i]) << std::endl;
+//   }
+//   return {};
+// }
+
+Napi::Array FontConfigWrapper::GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, (char *) 0);
+  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
+
+  std::vector<std::string>vecFontFamilies;
+  FcChar8 *family;
+  for (int i = 0; fontSet && i < fontSet->nfont; i++) {
+    FcPattern *currentPattern = fontSet->fonts[i];
+    if (FcPatternGetString(currentPattern, FC_FAMILY, 0, &family) == FcResultMatch) {
+      std::string familyStr = reinterpret_cast<const char*>(family); // not sure cast is the best idea, return uchar string ?
+      if (std::find(vecFontFamilies.begin(), vecFontFamilies.end(), familyStr) == vecFontFamilies.end())
+        vecFontFamilies.push_back(familyStr);
+    }
+  }
+  // fill result
+  Napi::Array fontFamilies = Napi::Array::New(env, vecFontFamilies.size());
+  for (unsigned int i = 0; i < vecFontFamilies.size(); i++) {
+    fontFamilies[i] = vecFontFamilies[i];
+  }
+
+  // cleanning ressources
+  FcFontSetDestroy(fontSet);
+  FcObjectSetDestroy(set);
+  return fontFamilies;
 }
 
 Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   std::string family = info[0].As<Napi::String>().Utf8Value();
 
-  m_set = FcObjectSetBuild(FC_FAMILY, FC_WEIGHT, FC_FULLNAME, (char *) 0);
-  m_fontSet = FcFontList(m_config, m_pattern, m_set);
+  FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, FC_WEIGHT, FC_FULLNAME, (char *) 0);
+  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
 
   std::vector<std::tuple<std::string, std::string, int>> resData;
-  for (int i = 0; m_fontSet && i < m_fontSet->nfont; i++) {
-    FcPattern *currentPattern = m_fontSet->fonts[i];
+  for (int i = 0; fontSet && i < fontSet->nfont; i++) {
+    FcPattern *currentPattern = fontSet->fonts[i];
     FcChar8 *currentFamily;
     if (FcPatternGetString(currentPattern, FC_FAMILY, 0, &currentFamily) == FcResultMatch) {
       if (std::string(reinterpret_cast<const char*>(currentFamily)).find(family) != std::string::npos) {
@@ -159,6 +163,9 @@ Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::Callb
     members[membersIdx] = Napi::Array(member);
     membersIdx++;
   }
+  // cleanning ressources
+  FcObjectSetDestroy(set);
+  FcFontSetDestroy(fontSet);
   return members;
 }
 

@@ -9,10 +9,7 @@
 
 #include <napi.h>
 #include <gtk/gtk.h>
-// #include <pango/pango.h>
-// #include <pango/pango-context.h>
 #include <fontconfig/fontconfig.h>
-#include <iostream> // TODO remove this
 #include <algorithm>
 #include <unordered_map>
 
@@ -34,8 +31,6 @@ class FontConfigWrapper
 
         FcConfig *m_config;
         FcPattern *m_pattern;
-        FcObjectSet *m_set;
-        FcFontSet *m_fontSet;
 
         /*! map with conditionnal functions applying to a font trait */
         std::unordered_map<std::string, TraitComparator> _traitsConditions = {
@@ -75,7 +70,6 @@ class FontConfigWrapper
             {"unbold", TraitComparator([](FcPattern * pat) {
                 FcChar8* name;
                 if (FcPatternGetString(pat, FC_STYLE, 0, &name) == FcResultMatch) {
-                    std::cout << std::string(reinterpret_cast<const char*>(name)) << std::endl;
                     return std::string(reinterpret_cast<const char*>(name)).find("Bold") == std::string::npos;
                 } else {
                     return false;
@@ -84,7 +78,6 @@ class FontConfigWrapper
             {"unitalic", TraitComparator([](FcPattern * pat) {
                 FcChar8* name;
                 if (FcPatternGetString(pat, FC_STYLE, 0, &name) == FcResultMatch) {
-                    std::cout << std::string(reinterpret_cast<const char*>(name)) << std::endl;
                     return std::string(reinterpret_cast<const char*>(name)).find("Italic") == std::string::npos;
                 } else {
                     return false;
