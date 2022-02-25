@@ -126,6 +126,7 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
 }
 
 Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
   std::string family = info[0].As<Napi::String>().Utf8Value();
 
   m_set = FcObjectSetBuild(FC_FAMILY, FC_WEIGHT, FC_FULLNAME, (char *) 0);
@@ -135,12 +136,30 @@ Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::Callb
   for (int i = 0; m_fontSet && i < m_fontSet->nfont; i++) {
     FcPattern *currentPattern = m_fontSet->fonts[i];
     FcChar8 *currentFamily;
-    if (FcPatternGetString(currentPattern, FC_FULLNAME, 0, &currentFamily) == FcResultMatch) {
-      if (std::string(reinterpret_cast<const char*>(currentFamily)) == family) {
-        
+    if (FcPatternGetString(currentPattern, FC_FAMILY, 0, &currentFamily) == FcResultMatch) {
+      if (std::string(reinterpret_cast<const char*>(currentFamily)).find(family) != std::string::npos) {
+        FcChar8 *name;
+        int weight = -1;
+        std::string strName;
+        if (FcPatternGetString(currentPattern, FC_FULLNAME, 0, &name) == FcResultMatch) {
+          strName = std::string(reinterpret_cast<const char*>(name));
+        }
+        FcPatternGetInteger(currentPattern, FC_WEIGHT, 0, &weight);
+        resData.emplace_back(strName, strName.substr(strName.find(family) + family.length() + 1), weight); // adding one to remove the separator
       }
     }
   }
+  Napi::Array members = Napi::Array::New(env, resData.size());
+  unsigned int membersIdx = 0;
+  for (const auto &fontCarac : resData) {
+    Napi::Array member = Napi::Array::New(env, 3);
+    member[0u] = std::get<0>(fontCarac);
+    member[1u] = std::get<1>(fontCarac);
+    member[2u] = std::get<2>(fontCarac);
+    members[membersIdx] = Napi::Array(member);
+    membersIdx++;
+  }
+  return members;
 }
 
 
@@ -156,6 +175,10 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(
     Napi::String::New(env, "getAvailableFonts"),
     Napi::Function::New(env, std::bind(&FontConfigWrapper::GetAvailableFonts, fc, std::placeholders::_1))
+  );
+  exports.Set(
+    Napi::String::New(env, "getAvailableMembersOfFontFamily"),
+    Napi::Function::New(env, std::bind(&FontConfigWrapper::GetAvailableMembersOfFontFamily, fc, std::placeholders::_1))
   );
 
   return exports;
