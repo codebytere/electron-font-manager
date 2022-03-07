@@ -1,4 +1,9 @@
-#include "FontConfigWrapper.hpp"
+#include <iostream>
+#include <napi.h>
+#include <gtk/gtk.h>
+#include <fontconfig/fontconfig.h>
+#include <algorithm>
+#include <unordered_map>
 
 /**
  * @brief ressources
@@ -6,19 +11,7 @@
  * find font with gtk: https://stackoverflow.com/questions/57982315/is-there-a-way-to-get-a-list-of-all-installed-fonts-in-the-system-in-gtk
  */
 
-FontConfigWrapper::FontConfigWrapper()
-{
-  FcInit();
-  m_config = FcInitLoadConfigAndFonts();
-  m_pattern = FcPatternCreate();
-}
-
-FontConfigWrapper::~FontConfigWrapper() // TODO handle correctly destruction
-{
-  // FcPatternDestroy(m_pattern);
-  // FcConfigDestroy(m_config);
-  // FcFini();
-}
+using TraitComparator = std::function<void(FcPattern *)>;
 
 void ShowFontPanel(const Napi::CallbackInfo &info) {
   std::string title = info[0].As<Napi::String>().Utf8Value();
@@ -28,44 +21,56 @@ void ShowFontPanel(const Napi::CallbackInfo &info) {
   gtk_widget_show(GTK_WIDGET(fd));
 }
 
-std::vector<TraitComparator> FontConfigWrapper::parseTraits(const Napi::Array &traits) {
-  std::vector<TraitComparator> res;
+void parseTraits(const Napi::Array &traits, FcPattern *pattern) {
+  /*! map applying options of front trait to a pattern */
+  static std::unordered_map<std::string, TraitComparator> traitsConditions = {
+      {"bold", TraitComparator([](FcPattern * pat) {
+          FcPatternAddString(pat, FC_STYLE, reinterpret_cast<const FcChar8 *>("Bold"));
+      })},
+      {"condensed", TraitComparator([](FcPattern * pat) {
+          FcRange *range = FcRangeCreateInteger(FC_WIDTH_ULTRACONDENSED, FC_WIDTH_CONDENSED);
+          FcPatternAddRange(pat, FC_WIDTH, range);
+      })},
+      {"expanded", TraitComparator([](FcPattern * pat) {
+          FcRange *range = FcRangeCreateInteger(FC_WIDTH_EXPANDED, FC_WIDTH_ULTRAEXPANDED);
+          FcPatternAddRange(pat, FC_WIDTH, range);
+      })},
+      {"italic", TraitComparator([](FcPattern * pat) {
+          FcPatternAddString(pat, FC_STYLE, reinterpret_cast<const FcChar8 *>("Italic"));
+      })},
+      // {"unbold", TraitComparator([](FcPattern * pat) {
+      // })},
+      // {"unitalic", TraitComparator([](FcPattern * pat) {
+      // })},
+  };
+
   int traits_length = static_cast<int>(traits.Length());
   for (int i = 0; i < traits_length; i++) {
     std::string trait = traits.Get(i).As<Napi::String>().Utf8Value();
-    res.push_back(_traitsConditions[trait]);
+    traitsConditions[trait](pattern);
   }
-  return res;
 }
 
-Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info) {
+Napi::Array GetAvailableFonts(const Napi::CallbackInfo &info) {
+  FcConfig *config = FcInitLoadConfigAndFonts();
+  FcPattern *pattern = FcPatternCreate();
   Napi::Env env = info.Env();
 
   // param gestion
   Napi::Object params = info[0].As<Napi::Object>();
-  std::vector<TraitComparator> traitsFilters;
   if (params.Has("traits")) {
     Napi::Array traits = params.Get("traits").As<Napi::Array>();
-    traitsFilters = parseTraits(traits);
+    parseTraits(traits, pattern);
   }
 
   FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, FC_FULLNAME, FC_STYLE, FC_WIDTH, (char *) 0);
-  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
+  FcFontSet *fontSet = FcFontList(config, pattern, set);
 
   std::vector<std::string> vecFontNames;
   for (int i = 0; fontSet && i < fontSet->nfont; i++) {
     FcPattern *currentPattern = fontSet->fonts[i];
     FcChar8 *name;
-
-    bool passAllFilters = true;
-    //handle traits
-    if (traitsFilters.size() > 0) {
-      for (const auto &filter : traitsFilters) {
-        passAllFilters = passAllFilters && filter(currentPattern);
-      }
-    }
-    // sometime, fonts do not have a full name. What to do in this case ?
-    if (passAllFilters && FcPatternGetString(currentPattern, FC_FULLNAME, 0, &name) == FcResultMatch) {
+    if (FcPatternGetString(currentPattern, FC_FULLNAME, 0, &name) == FcResultMatch) {
       vecFontNames.push_back(std::string(reinterpret_cast<const char*>(name)));
     }
   }
@@ -79,6 +84,8 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
   // cleanning ressources
   FcFontSetDestroy(fontSet);
   FcObjectSetDestroy(set);
+  FcPatternDestroy(pattern);
+  FcConfigDestroy(config);
   return fontNames;
 }
 
@@ -101,11 +108,13 @@ Napi::Array FontConfigWrapper::GetAvailableFonts(const Napi::CallbackInfo &info)
 //   return {};
 // }
 
-Napi::Array FontConfigWrapper::GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
+Napi::Array GetAvailableFontFamilies(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
+  FcConfig *config = FcInitLoadConfigAndFonts();
+  FcPattern *pattern = FcPatternCreate();
   FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, (char *) 0);
-  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
+  FcFontSet *fontSet = FcFontList(config, pattern, set);
 
   std::vector<std::string>vecFontFamilies;
   FcChar8 *family;
@@ -126,15 +135,20 @@ Napi::Array FontConfigWrapper::GetAvailableFontFamilies(const Napi::CallbackInfo
   // cleanning ressources
   FcFontSetDestroy(fontSet);
   FcObjectSetDestroy(set);
+  FcPatternDestroy(pattern);
+  FcConfigDestroy(config);
   return fontFamilies;
 }
 
-Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
+Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   std::string family = info[0].As<Napi::String>().Utf8Value();
 
+  FcConfig *config = FcInitLoadConfigAndFonts();
+  FcPattern *pattern = FcPatternCreate();
+
   FcObjectSet *set = FcObjectSetBuild(FC_FAMILY, FC_WEIGHT, FC_FULLNAME, (char *) 0);
-  FcFontSet *fontSet = FcFontList(m_config, m_pattern, set);
+  FcFontSet *fontSet = FcFontList(config, pattern, set);
 
   std::vector<std::tuple<std::string, std::string, int>> resData;
   for (int i = 0; fontSet && i < fontSet->nfont; i++) {
@@ -144,12 +158,12 @@ Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::Callb
       if (std::string(reinterpret_cast<const char*>(currentFamily)).find(family) != std::string::npos) {
         FcChar8 *name;
         int weight = -1;
-        std::string strName;
+        std::string strName = "";
         if (FcPatternGetString(currentPattern, FC_FULLNAME, 0, &name) == FcResultMatch) {
           strName = std::string(reinterpret_cast<const char*>(name));
+          FcPatternGetInteger(currentPattern, FC_WEIGHT, 0, &weight);
+          resData.emplace_back(strName, strName.substr(strName.find(family) + family.length() + 1), weight); // adding one to remove the separator
         }
-        FcPatternGetInteger(currentPattern, FC_WEIGHT, 0, &weight);
-        resData.emplace_back(strName, strName.substr(strName.find(family) + family.length() + 1), weight); // adding one to remove the separator
       }
     }
   }
@@ -166,28 +180,31 @@ Napi::Array FontConfigWrapper::GetAvailableMembersOfFontFamily(const Napi::Callb
   // cleanning ressources
   FcObjectSetDestroy(set);
   FcFontSetDestroy(fontSet);
+  FcPatternDestroy(pattern);
+  FcConfigDestroy(config);
   return members;
 }
 
-
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  static FontConfigWrapper fc;
+  // init library
+  FcInit();
   exports.Set(
     Napi::String::New(env, "showFontPanel"), Napi::Function::New(env, ShowFontPanel)
   );
   exports.Set(
     Napi::String::New(env, "getAvailableFontFamilies"),
-    Napi::Function::New(env, std::bind(&FontConfigWrapper::GetAvailableFontFamilies, fc, std::placeholders::_1))
+    Napi::Function::New(env, GetAvailableFontFamilies)
   );
   exports.Set(
     Napi::String::New(env, "getAvailableFonts"),
-    Napi::Function::New(env, std::bind(&FontConfigWrapper::GetAvailableFonts, fc, std::placeholders::_1))
+    Napi::Function::New(env, GetAvailableFonts)
   );
   exports.Set(
     Napi::String::New(env, "getAvailableMembersOfFontFamily"),
-    Napi::Function::New(env, std::bind(&FontConfigWrapper::GetAvailableMembersOfFontFamily, fc, std::placeholders::_1))
+    Napi::Function::New(env, GetAvailableMembersOfFontFamily)
   );
 
+  // FIXME find a way to stop the library with FcFini()
   return exports;
 }
 
