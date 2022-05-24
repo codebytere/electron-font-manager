@@ -168,21 +168,23 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   chooseFontStruct.lpLogFont = &logFont;
   Napi::Value familyValue = options.Get("family");
   if (familyValue.IsString()) {
-    StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, familyValue.As<Napi::String>().Utf16Value());
+    std::u16string s(familyValue.As<Napi::String>().Utf16Value());
+    StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, (const WCHAR*)s.c_str());
     flags |= CF_INITTOLOGFONTSTRUCT;
   }
-  std::vector<TCHAR> styleBuf;
+  std::vector<WCHAR> styleBuf;
   Napi::Value styleValue = options.Get("style");
   if (styleValue.IsString()) {
     styleBuf.resize(LF_FACESIZE);
     chooseFontStruct.lpszStyle = &styleBuf[0];
-    StringCchCopyW(chooseFontStruct.lpszStyle, LF_FACESIZE, styleValue.As<Napi::String>().Utf16Value());
+    std::u16string s(styleValue.As<Napi::String>().Utf16Value());
+    StringCchCopyW(chooseFontStruct.lpszStyle, LF_FACESIZE, (const WCHAR*)s.c_str());
     flags |= CF_USESTYLE;
   }
   Napi::Value pointSizeValue = options.Get("pointSize");
   if (pointSizeValue.IsNumber())
     chooseFontStruct.iPointSize = (INT)pointSizeValue.As<Napi::Number>().Int32Value();
-  Nap::Value traitsIn = options.Get("traits");
+  Napi::Value traitsIn = options.Get("traits");
   if (traitsIn.IsArray()) {
     Napi::Array traits = traits.As<Napi::Array>();
     int traits_length = static_cast<int>(traits.Length());
