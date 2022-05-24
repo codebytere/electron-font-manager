@@ -160,22 +160,43 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
 
   LOGFONTW logFont;
   memset(&logFont, 0, sizeof(logFont));
-  // if () {
-  //     StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, );
-  // }
 
   CHOOSEFONTW chooseFontStruct;
   memset(&chooseFontStruct, 0, sizeof(chooseFontStruct));
   chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
   chooseFontStruct.hwndOwner = GetTopWindow(NULL);
   chooseFontStruct.lpLogFont = &logFont;
-  // if () {
-  //     chooseFontStruct.iPointSize = (INT)0;
-  // }
-  // if () {
-  //     chooseFontStruct.lpszStyle = ;
-  //     flags |= CF_USESTYLE;
-  // }
+  Napi::Value familyValue = options.Get("family");
+  if (familyValue.IsString()) {
+    StringCchCopyW(logFont.lfFaceName, LF_FACESIZE, familyValue.As<Napi::String>().Utf16Value());
+    flags |= CF_INITTOLOGFONTSTRUCT;
+  }
+  std::vector<TCHAR> styleBuf;
+  Napi::Value styleValue = options.Get("style");
+  if (styleValue.IsString()) {
+    styleBuf.resize(LF_FACESIZE);
+    chooseFontStruct.lpszStyle = &styleBuf[0];
+    StringCchCopyW(chooseFontStruct.lpszStyle, LF_FACESIZE, styleValue.As<Napi::String>().Utf16Value());
+    flags |= CF_USESTYLE;
+  }
+  Napi::Value pointSizeValue = options.Get("pointSize");
+  if (pointSizeValue.IsNumber())
+    chooseFontStruct.iPointSize = (INT)pointSizeValue.As<Napi::Number>().Int32Value();
+  Nap::Value traitsIn = options.Get("traits");
+  if (traitsIn.IsArray()) {
+    Napi::Array traits = traits.As<Napi::Array>();
+    int traits_length = static_cast<int>(traits.Length());
+    for (int i = 0; i < traits_length; i++) {
+      std::string trait = traits.Get(i).As<Napi::String>().Utf8Value();
+      if (trait == "bold") {
+        logFont.lfWeight = FW_BOLD;
+        flags |= CF_INITTOLOGFONTSTRUCT;
+      } else if (trait == "italic") {
+        logFont.lfItalic = TRUE;
+        flags |= CF_INITTOLOGFONTSTRUCT;
+      }
+    }
+  }
   chooseFontStruct.Flags = flags;
 
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -188,12 +209,12 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
       obj.Set("pointSize", Napi::Number::New(env, chooseFontStruct.iPointSize));
       std::vector<std::string> traits;
       if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
-          traits.push_back("bold");
+        traits.push_back("bold");
       if ((chooseFontStruct.nFontType & ITALIC_FONTTYPE) != 0)
-          traits.push_back("italic");
+        traits.push_back("italic");
       Napi::Array t = Napi::Array::New(env, traits.size());
       for (size_t i = 0; i < traits.size(); i++)
-          t[i] = traits[i];
+        t[i] = traits[i];
       obj.Set(Napi::String::New(env, "traits"), t);
       emit.Call({Napi::String::New(env, "fontSelected"), obj});
       deferred.Resolve(obj);

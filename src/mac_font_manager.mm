@@ -115,7 +115,7 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   std::string family_utf8 = info[0].As<Napi::String>().Utf8Value();
-  NSString* family = [NSString stringWithUTF8String:family_utf8.c_str()];
+  NSString *family = [NSString stringWithUTF8String:family_utf8.c_str()];
 
   NSArray *family_members = [[NSFontManager sharedFontManager] availableMembersOfFontFamily:family];
 
@@ -138,12 +138,38 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
   return members;
 }
 
+NSFont *BuildFont(Napi::Object options) {
+  Napi::Value pointSizeValue = options.Get("pointSize");
+  if (pointSizeValue.IsNumber()) {
+      NSMutableDictionary<NSFontDescriptorAttributeName, id> *attrs = [NSMutableDictionary dictionaryWithCapacity:0];
+      Napi::Value nameValue = options.Get("name");
+      if (nameValue.IsString()) {
+        std::string s(nameValue.As<Napi::String>().Utf8Value());
+        attrs[NSFontNameAttribute] = [NSString stringWithUTF8String:s.c_str()];
+      }
+      Napi::Value familyValue = options.Get("family");
+      if (familyValue.IsString()) {
+        std::string s(familyValue.As<Napi::String>().Utf8Value());
+        attrs[NSFontFamilyAttribute] = [NSString stringWithUTF8String:s.c_str()];
+      }
+      Napi::Value traits = options.Get("traits");
+      if (traits.IsArray()) {
+        NSFontTraitMask mask = ParseTraits(traits.As<Napi::Array>());
+        attrs[NSFontSymbolicTrait] = [NSNumber numberWithUnsignedInt:mask];
+      }
+      NSFontDescriptor *descr = [NSFontDescriptor fontDescriptorWithFontAttributes:attrs];
+      CGFloat size = pointSizeValue.As<Napi::Number>().FloatValue();
+      return [NSFont fontWithDescriptor:descr size:size];
+  }
+  return nil;
+}
+
 @interface FontPanelTarget: NSObject
 {
 }
 
-@property (assign) Napi::FunctionReference* emit;
-@property (retain) NSFont* font;
+@property (assign) Napi::FunctionReference *emit;
+@property (retain) NSFont *font;
 
 @end
 
@@ -189,7 +215,7 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
 
 @end
 
-FontPanelTarget* _target = nil;
+FontPanelTarget *_target = nil;
 
 Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
@@ -202,11 +228,15 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Value titleValue = options.Get("title");
   if (titleValue.IsString())
       title = titleValue.As<Napi::String>().Utf8Value();
-  NSFontManager* font_manager = [NSFontManager sharedFontManager];
-  FontPanelTarget* target = [[FontPanelTarget alloc] initWithEmitter:&emit];
+  NSFontManager *font_manager = [NSFontManager sharedFontManager];
+  FontPanelTarget *target = [[FontPanelTarget alloc] initWithEmitter:&emit];
   _target = target;
   [font_manager setTarget:target];
   [font_manager setDelegate:target];
+  NSFont *font = BuildFont(options);
+  if (font) {
+    [font_manager setSelectedFont:font isMultiple:NO];
+  }
 
   NSWindow *window = [[NSApplication sharedApplication] keyWindow];
   if (show_styles)
