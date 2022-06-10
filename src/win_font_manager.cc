@@ -186,7 +186,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
     chooseFontStruct.iPointSize = (INT)pointSizeValue.As<Napi::Number>().Int32Value();
   Napi::Value traitsIn = options.Get("traits");
   if (traitsIn.IsArray()) {
-    Napi::Array traits = traits.As<Napi::Array>();
+    Napi::Array traits = traitsIn.As<Napi::Array>();
     int traits_length = static_cast<int>(traits.Length());
     for (int i = 0; i < traits_length; i++) {
       std::string trait = traits.Get(i).As<Napi::String>().Utf8Value();
