@@ -212,7 +212,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
               Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
     // In 1/10s of a point
     obj.Set("pointSize",
-            Napi::Number::New(env, (double)chooseFontStruct.iPointSize) / 10.0);
+            Napi::Number::New(env, (double)chooseFontStruct.iPointSize / 10.0));
     std::vector<std::string> traits;
     if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
       traits.push_back("bold");
