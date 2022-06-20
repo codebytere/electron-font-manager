@@ -182,8 +182,9 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
     flags |= CF_USESTYLE;
   }
   Napi::Value pointSizeValue = options.Get("pointSize");
+  // In 1/10s of a point
   if (pointSizeValue.IsNumber())
-    chooseFontStruct.iPointSize = (INT)pointSizeValue.As<Napi::Number>().Int32Value();
+    chooseFontStruct.iPointSize = (INT)(pointSizeValue.As<Napi::Number>().DoubleValue() * 10.0);
   Napi::Value traitsIn = options.Get("traits");
   if (traitsIn.IsArray()) {
     Napi::Array traits = traitsIn.As<Napi::Array>();
@@ -204,22 +205,25 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
   if (ChooseFontW(&chooseFontStruct) != 0)
   {
-      Napi::Object obj = Napi::Object::New(env);
-      obj.Set("family", Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
-      if (chooseFontStruct.lpszStyle)
-          obj.Set("style", Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
-      obj.Set("pointSize", Napi::Number::New(env, chooseFontStruct.iPointSize));
-      std::vector<std::string> traits;
-      if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
-        traits.push_back("bold");
-      if ((chooseFontStruct.nFontType & ITALIC_FONTTYPE) != 0)
-        traits.push_back("italic");
-      Napi::Array t = Napi::Array::New(env, traits.size());
-      for (size_t i = 0; i < traits.size(); i++)
-        t[i] = traits[i];
-      obj.Set(Napi::String::New(env, "traits"), t);
-      emit.Call({Napi::String::New(env, "fontSelected"), obj});
-      deferred.Resolve(obj);
+    Napi::Object obj = Napi::Object::New(env);
+    obj.Set("family", Napi::String::New(env, (const char16_t*)logFont.lfFaceName));
+    if (chooseFontStruct.lpszStyle)
+      obj.Set("style",
+              Napi::String::New(env, (const char16_t*)chooseFontStruct.lpszStyle));
+    // In 1/10s of a point
+    obj.Set("pointSize",
+            Napi::Number::New(env, (double)chooseFontStruct.iPointSize) / 10.0);
+    std::vector<std::string> traits;
+    if ((chooseFontStruct.nFontType & BOLD_FONTTYPE) != 0)
+      traits.push_back("bold");
+    if ((chooseFontStruct.nFontType & ITALIC_FONTTYPE) != 0)
+      traits.push_back("italic");
+    Napi::Array t = Napi::Array::New(env, traits.size());
+    for (size_t i = 0; i < traits.size(); i++)
+      t[i] = traits[i];
+    obj.Set(Napi::String::New(env, "traits"), t);
+    emit.Call({Napi::String::New(env, "fontSelected"), obj});
+    deferred.Resolve(obj);
   }
   else
   {
