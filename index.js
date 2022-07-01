@@ -43,7 +43,16 @@ class FontPanel extends EventEmitter {
     if (options.showStyles !== undefined && typeof options.showStyles !== 'boolean') {
       throw new TypeError('showStyles must be a boolean')
     }
-    return fontManager.showFontPanel.call(this, this.emit.bind(this), options);
+    const { parent } = options;
+    const o = { ...options };
+    if (parent) {
+      if (parent.getNativeWindowHandle) {
+        o.parent = parent.getNativeWindowHandle();
+      } else {
+        delete o.parent;
+      }
+    }
+    return fontManager.showFontPanel.call(this, this.emit.bind(this), o);
   }
 }
 

@@ -155,16 +155,20 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   std::u16string title;
   Napi::Value titleValue = options.Get("title");
   if (titleValue.IsString())
-      title = titleValue.As<Napi::String>().Utf16Value();
+    title = titleValue.As<Napi::String>().Utf16Value();
   DWORD flags = CF_SCREENFONTS | CF_SCALABLEONLY;
 
   LOGFONTW logFont;
   memset(&logFont, 0, sizeof(logFont));
 
+  HWND parentHWND = NULL;
+  Napi::Value parentValue = options.Get("parent");
+  if (parentValue.IsBuffer() && parentValue.As<Napi::Buffer>().Length() == sizeof(HWND))
+    parentHWND = *(HWND*)parentValue.As<Napi::Buffer>().Data();
   CHOOSEFONTW chooseFontStruct;
   memset(&chooseFontStruct, 0, sizeof(chooseFontStruct));
   chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
-  chooseFontStruct.hwndOwner = GetTopWindow(NULL);
+  chooseFontStruct.hwndOwner = parentHWND;
   chooseFontStruct.lpLogFont = &logFont;
   Napi::Value familyValue = options.Get("family");
   if (familyValue.IsString()) {
