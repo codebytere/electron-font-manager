@@ -163,8 +163,8 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
 
   HWND parentHWND = NULL;
   Napi::Value parentValue = options.Get("parent");
-  if (parentValue.IsBuffer() && parentValue.As<Napi::Buffer>().Length() == sizeof(HWND))
-    parentHWND = *(HWND*)parentValue.As<Napi::Buffer>().Data();
+  if (parentValue.IsBuffer() && parentValue.As<Napi::Buffer<HWND>>().Length() == 1)
+    parentHWND = *parentValue.As<Napi::Buffer<HWND>>().Data();
   CHOOSEFONTW chooseFontStruct;
   memset(&chooseFontStruct, 0, sizeof(chooseFontStruct));
   chooseFontStruct.lStructSize = sizeof(CHOOSEFONTW);
