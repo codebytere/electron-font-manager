@@ -39,34 +39,34 @@ NSFontTraitMask ParseTraits(Napi::Array traits) {
 }
 
 Napi::Array BuildTraits(Napi::Env env, NSFontTraitMask mask) {
-    std::vector<std::string> traits;
-    if ((NSBoldFontMask & mask) != 0)
-        traits.push_back("bold");
-    if ((NSCondensedFontMask & mask) != 0)
-        traits.push_back("condensed");
-    if ((NSExpandedFontMask & mask) != 0)
-        traits.push_back("expanded");
-    if ((NSFixedPitchFontMask & mask) != 0)
-        traits.push_back("fixedPitch");
-    if ((NSItalicFontMask & mask) != 0)
-        traits.push_back("italic");
-    if ((NSNarrowFontMask & mask) != 0)
-        traits.push_back("narrow");
-    if ((NSNonStandardCharacterSetFontMask & mask) != 0)
-        traits.push_back("nonStandardCharacterSet");
-    if ((NSPosterFontMask & mask) != 0)
-        traits.push_back("poster");
-    if ((NSSmallCapsFontMask & mask) != 0)
-        traits.push_back("smallCaps");
-    if ((NSUnboldFontMask & mask) != 0)
-        traits.push_back("unbold");
-    if ((NSUnitalicFontMask & mask) != 0)
-        traits.push_back("unitalic");
-    Napi::Array t = Napi::Array::New(env, traits.size());
-    for (size_t i = 0; i < traits.size(); i++)
-        t[i] = traits[i];
+  std::vector<std::string> traits;
+  if ((NSBoldFontMask & mask) != 0)
+    traits.push_back("bold");
+  if ((NSCondensedFontMask & mask) != 0)
+    traits.push_back("condensed");
+  if ((NSExpandedFontMask & mask) != 0)
+    traits.push_back("expanded");
+  if ((NSFixedPitchFontMask & mask) != 0)
+    traits.push_back("fixedPitch");
+  if ((NSItalicFontMask & mask) != 0)
+    traits.push_back("italic");
+  if ((NSNarrowFontMask & mask) != 0)
+    traits.push_back("narrow");
+  if ((NSNonStandardCharacterSetFontMask & mask) != 0)
+    traits.push_back("nonStandardCharacterSet");
+  if ((NSPosterFontMask & mask) != 0)
+    traits.push_back("poster");
+  if ((NSSmallCapsFontMask & mask) != 0)
+    traits.push_back("smallCaps");
+  if ((NSUnboldFontMask & mask) != 0)
+    traits.push_back("unbold");
+  if ((NSUnitalicFontMask & mask) != 0)
+    traits.push_back("unitalic");
+  Napi::Array t = Napi::Array::New(env, traits.size());
+  for (size_t i = 0; i < traits.size(); i++)
+    t[i] = traits[i];
 
-    return t;
+  return t;
 }
 
 /***** EXPORTED FUNCTIONS *****/
@@ -141,25 +141,25 @@ Napi::Array GetAvailableMembersOfFontFamily(const Napi::CallbackInfo &info) {
 NSFont *BuildFont(Napi::Object options) {
   Napi::Value pointSizeValue = options.Get("pointSize");
   if (pointSizeValue.IsNumber()) {
-      NSMutableDictionary<NSFontDescriptorAttributeName, id> *attrs = [NSMutableDictionary dictionaryWithCapacity:0];
-      Napi::Value nameValue = options.Get("name");
-      if (nameValue.IsString()) {
-        std::string s(nameValue.As<Napi::String>().Utf8Value());
-        attrs[NSFontNameAttribute] = [NSString stringWithUTF8String:s.c_str()];
-      }
-      Napi::Value familyValue = options.Get("family");
-      if (familyValue.IsString()) {
-        std::string s(familyValue.As<Napi::String>().Utf8Value());
-        attrs[NSFontFamilyAttribute] = [NSString stringWithUTF8String:s.c_str()];
-      }
-      Napi::Value traits = options.Get("traits");
-      if (traits.IsArray()) {
-        NSFontTraitMask mask = ParseTraits(traits.As<Napi::Array>());
-        attrs[NSFontSymbolicTrait] = [NSNumber numberWithUnsignedInt:mask];
-      }
-      NSFontDescriptor *descr = [NSFontDescriptor fontDescriptorWithFontAttributes:attrs];
-      CGFloat size = pointSizeValue.As<Napi::Number>().FloatValue();
-      return [NSFont fontWithDescriptor:descr size:size];
+    NSMutableDictionary<NSFontDescriptorAttributeName, id> *attrs = [NSMutableDictionary dictionaryWithCapacity:0];
+    Napi::Value nameValue = options.Get("name");
+    if (nameValue.IsString()) {
+      std::string s(nameValue.As<Napi::String>().Utf8Value());
+      attrs[NSFontNameAttribute] = [NSString stringWithUTF8String:s.c_str()];
+    }
+    Napi::Value familyValue = options.Get("family");
+    if (familyValue.IsString()) {
+      std::string s(familyValue.As<Napi::String>().Utf8Value());
+      attrs[NSFontFamilyAttribute] = [NSString stringWithUTF8String:s.c_str()];
+    }
+    Napi::Value traits = options.Get("traits");
+    if (traits.IsArray()) {
+      NSFontTraitMask mask = ParseTraits(traits.As<Napi::Array>());
+      attrs[NSFontSymbolicTrait] = [NSNumber numberWithUnsignedInt:mask];
+    }
+    NSFontDescriptor *descr = [NSFontDescriptor fontDescriptorWithFontAttributes:attrs];
+    CGFloat size = pointSizeValue.As<Napi::Number>().FloatValue();
+    return [NSFont fontWithDescriptor:descr size:size];
   }
   return nil;
 }
@@ -177,40 +177,39 @@ NSFont *BuildFont(Napi::Object options) {
 
 - (nullable instancetype)initWithEmitter:(Napi::Function*)emit
 {
-    self = [super init];
-    if (self != nil)
-    {
-        self.emit = new Napi::FunctionReference;
-        *self.emit = Napi::Persistent(*emit);
-        self.font = [NSFont boldSystemFontOfSize:12];
-    }
+  self = [super init];
+  if (self != nil) {
+    self.emit = new Napi::FunctionReference;
+    *self.emit = Napi::Persistent(*emit);
+    self.font = [NSFont boldSystemFontOfSize:12];
+  }
 
-    return self;
+  return self;
 }
 
 - (void)dealloc
 {
-    if (self.emit) {
-        Napi::Env env = self.emit->Env();
-        Napi::HandleScope scope(env);
-        delete self.emit;
-    }
-    [super dealloc];
+  if (self.emit) {
+    Napi::Env env = self.emit->Env();
+    Napi::HandleScope scope(env);
+    delete self.emit;
+  }
+  [super dealloc];
 }
 
 - (void)changeFont:(id)sender
 {
-    self.font = [sender convertFont:self.font];
+  self.font = [sender convertFont:self.font];
 
-    Napi::Env env = self.emit->Env();
-    Napi::HandleScope scope(env);
-    Napi::Object obj = Napi::Object::New(env);
-    obj.Set(Napi::String::New(env, "family"), Napi::String::New(env, [self.font.familyName UTF8String]));
-    obj.Set(Napi::String::New(env, "name"), Napi::String::New(env, [self.font.fontName UTF8String]));
-    obj.Set(Napi::String::New(env, "pointSize"), Napi::Number::New(env, self.font.pointSize));
-    NSFontTraitMask mask = self.font.fontDescriptor.symbolicTraits;
-    obj.Set(Napi::String::New(env, "traits"), BuildTraits(env, mask));
-    self.emit->Call({Napi::String::New(env, "fontSelected"), obj});
+  Napi::Env env = self.emit->Env();
+  Napi::HandleScope scope(env);
+  Napi::Object obj = Napi::Object::New(env);
+  obj.Set(Napi::String::New(env, "family"), Napi::String::New(env, [self.font.familyName UTF8String]));
+  obj.Set(Napi::String::New(env, "name"), Napi::String::New(env, [self.font.fontName UTF8String]));
+  obj.Set(Napi::String::New(env, "pointSize"), Napi::Number::New(env, self.font.pointSize));
+  NSFontTraitMask mask = self.font.fontDescriptor.symbolicTraits;
+  obj.Set(Napi::String::New(env, "traits"), BuildTraits(env, mask));
+  self.emit->Call({Napi::String::New(env, "fontSelected"), obj});
 }
 
 @end
@@ -223,11 +222,11 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
 
   Napi::Function emit(info[0].As<Napi::Function>());
   Napi::Object options = info[1].As<Napi::Object>();
-  bool show_styles = options.Get("showStyle").As<Napi::Boolean>().Value();
+  bool show_styles = options.Get("showStyle").ToBoolean().Value();
   std::string title;
   Napi::Value titleValue = options.Get("title");
   if (titleValue.IsString())
-      title = titleValue.As<Napi::String>().Utf8Value();
+    title = titleValue.As<Napi::String>().Utf8Value();
   NSFontManager *font_manager = [NSFontManager sharedFontManager];
   FontPanelTarget *target = [[FontPanelTarget alloc] initWithEmitter:&emit];
   _target = target;
@@ -244,6 +243,8 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   else
     [font_manager orderFrontFontPanel:window];
 
+  Napi::Object obj = Napi::Object::New(env);
+  deferred.Resolve(obj);
   return deferred.Promise();
 }
 
