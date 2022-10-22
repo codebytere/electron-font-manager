@@ -186,9 +186,13 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
     flags |= CF_USESTYLE;
   }
   Napi::Value pointSizeValue = options.Get("pointSize");
-  // In 1/10s of a point
-  if (pointSizeValue.IsNumber())
-    chooseFontStruct.iPointSize = (INT)(pointSizeValue.As<Napi::Number>().DoubleValue() * 10.0);
+  if (pointSizeValue.IsNumber()) {
+    double pointSize = pointSizeValue.As<Napi::Number>().DoubleValue();
+    HDC hDC = GetDC(parentHWND);
+    logFont.lfHeight = INT(-pointSize * GetDeviceCaps(hDC, LOGPIXELSY) / 72);
+    // In 1/10s of a point
+    chooseFontStruct.iPointSize = (INT)(pointSize * 10.0);
+  }
   Napi::Value traitsIn = options.Get("traits");
   if (traitsIn.IsArray()) {
     Napi::Array traits = traitsIn.As<Napi::Array>();
