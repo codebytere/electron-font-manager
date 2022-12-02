@@ -222,7 +222,10 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
 
   Napi::Function emit(info[0].As<Napi::Function>());
   Napi::Object options = info[1].As<Napi::Object>();
-  bool show_styles = options.Get("showStyle").ToBoolean().Value();
+  bool show_styles = false;
+  Napi::Value showValue = options.Get("showStyle");
+  if (showValue.IsBoolean())
+    show_styles = showValue.ToBoolean().Value();
   std::string title;
   Napi::Value titleValue = options.Get("title");
   if (titleValue.IsString())
