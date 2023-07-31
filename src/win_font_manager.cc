@@ -156,7 +156,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   Napi::Value titleValue = options.Get("title");
   if (titleValue.IsString())
     title = titleValue.As<Napi::String>().Utf16Value();
-  DWORD flags = CF_SCREENFONTS | CF_SCALABLEONLY;
+  DWORD flags = CF_SCREENFONTS | CF_SCALABLEONLY | CF_EFFECTS;
 
   LOGFONTW logFont;
   memset(&logFont, 0, sizeof(logFont));
@@ -235,7 +235,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   }
   else
   {
-    deferred.Reject(Napi::String::New(env, "user cancel"));
+    deferred.Reject(Napi::Error::New(env, "cancel"));
   }
   return deferred.Promise();
 }
