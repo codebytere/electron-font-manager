@@ -1,9 +1,9 @@
 const { expect } = require('chai')
-const { 
+const {
   getAvailableFontFamilies,
   getAvailableMembersOfFontFamily,
   getAvailableFonts,
-  showFontPanel
+  FontPanel
 } = require('../index')
 
 describe('electron-font-manager', () => {
@@ -58,10 +58,11 @@ describe('electron-font-manager', () => {
     })
   })
 
-  describe('showFontPanel(showStyles)', () => {
+  describe('FontPanel.show({ showStyles })', () => {
     it('should throw if showStyles is not a boolean', () => {
       expect(() => {
-        showFontPanel('hello')
+        const panel = new FontPanel();
+        panel.show({ showStyles: 'hello' });
       }).to.throw(/showStyles must be a boolean/)
     })
   })

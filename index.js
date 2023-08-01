@@ -1,4 +1,5 @@
-const fontManager = require('./build/Release/font_manager.node')
+const { EventEmitter } = require('events');
+const fontManager = require('./build/Release/font_manager.node');
 
 function getAvailableFonts(params = {}) {
   const options = [
@@ -37,17 +38,27 @@ function getAvailableMembersOfFontFamily(fontFamily) {
   return fontManager.getAvailableMembersOfFontFamily.call(this, fontFamily)
 }
 
-function showFontPanel(showStyles = false) {
-  if (typeof showStyles !== 'boolean') {
-    throw new TypeError('showStyles must be a boolean')
+class FontPanel extends EventEmitter {
+  show(options = {}) {
+    if (options.showStyles !== undefined && typeof options.showStyles !== 'boolean') {
+      throw new TypeError('showStyles must be a boolean')
+    }
+    const { parent } = options;
+    const o = { ...options };
+    if (parent) {
+      if (parent.getNativeWindowHandle) {
+        o.parent = parent.getNativeWindowHandle();
+      } else {
+        delete o.parent;
+      }
+    }
+    return fontManager.showFontPanel.call(this, this.emit.bind(this), o);
   }
-
-  fontManager.showFontPanel.call(this, showStyles)
 }
 
 module.exports = {
   getAvailableFonts,
   getAvailableMembersOfFontFamily,
   getAvailableFontFamilies: fontManager.getAvailableFontFamilies,
-  showFontPanel,
+  FontPanel,
 }
