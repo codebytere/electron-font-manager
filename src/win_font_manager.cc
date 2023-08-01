@@ -235,7 +235,7 @@ Napi::Value ShowFontPanel(const Napi::CallbackInfo &info) {
   }
   else
   {
-    deferred.Reject(Napi::Error::New(env, "cancel"));
+    deferred.Reject(Napi::Error::New(env, "cancel").Value());
   }
   return deferred.Promise();
 }
